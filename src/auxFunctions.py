@@ -6,17 +6,19 @@ from fractions import Fraction
 
 
 # Credit: https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
-def progressBar(iterable, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r", upLines = 0):
+def progressBar(iterable, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", upLines=0):
     UP = "\x1B[" + str(upLines + 1) + "A"
 
     total = len(iterable)
     # Progress Bar Printing Function
-    def printProgressBar (iteration):
-        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+
+    def printProgressBar(iteration):
+        percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                         (iteration / float(total)))
         filledLength = int(length * iteration // total)
         bar = fill * filledLength + '-' * (length - filledLength)
 
-        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
     # Initial Call
     printProgressBar(0)
     # Update Progress Bar
@@ -28,30 +30,49 @@ def progressBar(iterable, prefix = '', suffix = '', decimals = 1, length = 100, 
     print()
 
 # Function to search media associated to the JSON
+
+
 def searchMedia(path, title, editedWord):
-    title = fixTitle(title)
+    try:
+        title = fixTitle(title)
+        (file_name, ext) = os.path.splitext(title)
+        possible_titles = [
+            title,
+            str(file_name + "-" + editedWord + "." + ext),
+            str(file_name + "(1)." + ext),
+        ]
 
-    (file_name, ext) = os.path.splitext(title)
+        # Check for exact matches first
+        for title in possible_titles:
+            filepath = os.path.join(path, title)
+            if os.path.exists(filepath):
+                return filepath
 
-    possible_titles = [
-        title,
-        str(file_name + "-" + editedWord + "." + ext),
-        str(file_name + "(1)." + ext),
-    ]
+        # If no exact match is found, search for "looser" matches
+        for entry in os.listdir(path):
+            # Check if the entry is a video file and matches the first 90% of the title
+            abbrev_title = title[:int(len(title)*0.9)]
+            print(f"TRYING WITH ABBREVIATED TITLE: {abbrev_title}")
+            if entry.endswith((".mp4", ".mov")) and entry.startswith(title[:int(len(title)*0.9)]):
+                return os.path.join(path, entry)
 
-    for title in possible_titles:
-        filepath = os.path.join(path, title)
+        # If no matching file is found, return None
+        return None
 
-        if os.path.exists(filepath):
-            return filepath
+    except Exception as e:
+        print(f"Error in searchMedia: {e}")
+        return None
+
 
 # Supress incompatible characters
 def fixTitle(title):
-    return str(title).replace("%", "").replace("<", "").replace(">", "").replace("=", "").replace(":", "").replace("?","").replace(
+    return str(title).replace("%", "").replace("<", "").replace(">", "").replace("=", "").replace(":", "").replace("?", "").replace(
         "¿", "").replace("*", "").replace("#", "").replace("&", "").replace("{", "").replace("}", "").replace("\\", "").replace(
         "@", "").replace("!", "").replace("¿", "").replace("+", "").replace("|", "").replace("\"", "").replace("\'", "")
 
 # Recursive function to search name if its repeated
+
+
 def checkIfSameName(title, titleFixed, matchedFiles, recursionTime):
     if titleFixed in matchedFiles:
         (file_name, ext) = os.path.splitext(titleFixed)
@@ -60,10 +81,12 @@ def checkIfSameName(title, titleFixed, matchedFiles, recursionTime):
     else:
         return titleFixed
 
+
 def setFileCreationTime(filepath, timeStamp):
     date = datetime.fromtimestamp(timeStamp)
     modTime = time.mktime(date.timetuple())
     os.utime(filepath, (modTime, modTime))
+
 
 def to_deg(value, loc):
     """convert decimal coordinates into degrees, munutes and seconds tuple
@@ -92,14 +115,17 @@ def change_to_rational(number):
     f = Fraction(str(number))
     return (f.numerator, f.denominator)
 
+
 def set_geo_exif(exif_dict, lat, lng, altitude):
     lat_deg = to_deg(lat, ["S", "N"])
     lng_deg = to_deg(lng, ["W", "E"])
 
-    exiv_lat = (change_to_rational(lat_deg[0]), change_to_rational(lat_deg[1]), change_to_rational(lat_deg[2]))
-    exiv_lng = (change_to_rational(lng_deg[0]), change_to_rational(lng_deg[1]), change_to_rational(lng_deg[2]))
+    exiv_lat = (change_to_rational(lat_deg[0]), change_to_rational(
+        lat_deg[1]), change_to_rational(lat_deg[2]))
+    exiv_lng = (change_to_rational(lng_deg[0]), change_to_rational(
+        lng_deg[1]), change_to_rational(lng_deg[2]))
 
-    altitudeRef = 1 if altitude > 0 else 0 
+    altitudeRef = 1 if altitude > 0 else 0
 
     gps_ifd = {
         piexif.GPSIFD.GPSVersionID: (2, 0, 0, 0),
@@ -113,12 +139,14 @@ def set_geo_exif(exif_dict, lat, lng, altitude):
 
     exif_dict['GPS'] = gps_ifd
 
+
 def set_date_exif(exif_dict, timestamp):
     dateTime = datetime.fromtimestamp(timestamp).strftime("%Y:%m:%d %H:%M:%S")
     exif_dict['0th'][piexif.ImageIFD.DateTime] = dateTime
     exif_dict["0th"][piexif.ImageIFD.Orientation] = 1
     exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = dateTime
     exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = dateTime
+
 
 def adjust_exif(exif_info, metadata):
     timeStamp = int(metadata['photoTakenTime']['timestamp'])
