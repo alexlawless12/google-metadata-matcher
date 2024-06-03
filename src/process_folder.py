@@ -8,7 +8,6 @@ from moviepy.editor import VideoFileClip
 
 
 register_heif_opener()
-
 CLR = "\x1B[0K"
 exiftool_path = "/usr/local/bin/exiftool"
 def CURSOR_UP_FACTORY(upLines): return "\x1B[" + str(upLines) + "A"
@@ -16,7 +15,6 @@ def CURSOR_DOWN_FACTORY(upLines): return "\x1B[" + str(upLines) + "B"
 
 
 OrientationTagID = 274
-
 piexifCodecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG',
                                        'JPG', 'HEIC', 'PNG', 'MP4', 'MOV']]
 
