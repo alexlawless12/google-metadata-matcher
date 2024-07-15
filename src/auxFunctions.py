@@ -29,9 +29,8 @@ def progressBar(iterable, prefix='', suffix='', decimals=1, length=100, fill='�
     # Print New Line on Complete
     print()
 
+
 # Function to search media associated to the JSON
-
-
 def searchMedia(path, title, editedWord):
     try:
         title = fixTitle(title)
@@ -49,12 +48,12 @@ def searchMedia(path, title, editedWord):
                 return filepath
 
         # If no exact match is found, search for "looser" matches
-        for entry in os.listdir(path):
-            # Check if the entry is a video file and matches the first 90% of the title
-            abbrev_title = title[:int(len(title)*0.9)]
-            print(f"TRYING WITH ABBREVIATED TITLE: {abbrev_title}")
-            if entry.endswith((".mp4", ".mov")) and entry.startswith(title[:int(len(title)*0.9)]):
-                return os.path.join(path, entry)
+        # for entry in os.listdir(path):
+        #     # Check if the entry is a video file and matches the first 90% of the title
+        #     abbrev_title = title[:int(len(title)*0.9)]
+        #     print(f"TRYING WITH ABBREVIATED TITLE: {abbrev_title}")
+        #     if entry.endswith((".mp4", ".mov")) and entry.startswith(title[:int(len(title)*0.9)]):
+        #         return os.path.join(path, entry)
 
         # If no matching file is found, return None
         return None
@@ -70,9 +69,8 @@ def fixTitle(title):
         "¿", "").replace("*", "").replace("#", "").replace("&", "").replace("{", "").replace("}", "").replace("\\", "").replace(
         "@", "").replace("!", "").replace("¿", "").replace("+", "").replace("|", "").replace("\"", "").replace("\'", "")
 
+
 # Recursive function to search name if its repeated
-
-
 def checkIfSameName(title, titleFixed, matchedFiles, recursionTime):
     if titleFixed in matchedFiles:
         (file_name, ext) = os.path.splitext(titleFixed)
@@ -155,11 +153,21 @@ def adjust_exif(exif_info, metadata):
 
     del exif_dict["thumbnail"]
 
-    lat = metadata['geoData']['latitude']
-    lng = metadata['geoData']['longitude']
-    altitude = metadata['geoData']['altitude']
+    # lat = metadata['geoData']['latitude']
+    # lng = metadata['geoData']['longitude']
+    # altitude = metadata['geoData']['altitude']
 
     set_date_exif(exif_dict, timeStamp)
-    set_geo_exif(exif_dict, lat, lng, altitude)
+    # set_geo_exif(exif_dict, lat, lng, altitude)
 
-    return piexif.dump(exif_dict)
+    try:
+        return piexif.dump(exif_dict)
+    except ValueError as e:
+        print("Error in EXIF data:", e)
+        # Handle specific EXIF tag error if needed
+        if "41729" in str(e):
+            exif_dict["Exif"].pop(piexif.ExifIFD.SensitivityType, None)
+            print("Removed problematic tag.")
+            return piexif.dump(exif_dict)
+        else:
+            raise
