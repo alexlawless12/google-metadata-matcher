@@ -151,7 +151,7 @@ def adjust_exif(exif_info, metadata):
 
     exif_dict = piexif.load(exif_info)
 
-    del exif_dict["thumbnail"]
+    # del exif_dict["thumbnail"]
 
     # lat = metadata['geoData']['latitude']
     # lng = metadata['geoData']['longitude']

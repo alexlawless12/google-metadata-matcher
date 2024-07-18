@@ -129,6 +129,10 @@ def save_processed_video(video_path, out_folder, metadata):
     print("Video saved successfully!")
     setFileCreationTime(output_path, metadata["photo_taken_time"])
 
+    # Delete original video file and metadata
+    os.remove(video_path)
+    os.remove(metadata_path)
+
 
 def save_processed_image(image_path, output_path, metadata):
     # Extract photoTakenTime from metadata
@@ -182,8 +186,11 @@ def processFolder(root_folder, edited_word, optimize, out_folder, max_dimension)
                   metadata_path, CLR, CURSOR_DOWN_FACTORY(2))
             errorCounter += 1
             # Move the metadata file to failures directory
-            os.rename(metadata_path, os.path.join(
-                failures_dir, os.path.basename(metadata_path)))
+            failure_metadata_path = os.path.join(
+                failures_dir, os.path.basename(metadata_path))
+            if os.path.exists(failure_metadata_path):
+                os.remove(failure_metadata_path)
+            os.rename(metadata_path, failure_metadata_path)
             continue
 
         (_, ext) = os.path.splitext(file_path)
@@ -193,8 +200,11 @@ def processFolder(root_folder, edited_word, optimize, out_folder, max_dimension)
                   file_path, CLR, CURSOR_DOWN_FACTORY(2))
             errorCounter += 1
             # Move the file to failures directory
-            os.rename(file_path, os.path.join(
-                failures_dir, os.path.basename(file_path)))
+            failure_file_path = os.path.join(
+                failures_dir, os.path.basename(file_path))
+            if os.path.exists(failure_file_path):
+                os.remove(failure_file_path)
+            os.rename(file_path, failure_file_path)
             continue
 
         if ext[1:].casefold() in ['mp4', 'mov', 'avi']:
@@ -204,16 +214,21 @@ def processFolder(root_folder, edited_word, optimize, out_folder, max_dimension)
                 metadata = extract_video_metadata(file_path, metadata_path)
                 save_processed_video(file_path, out_folder, metadata)
                 successCounter += 1
-                # Merge metadata and save processed video
             except Exception as e:
                 print(CURSOR_UP_FACTORY(2), 'Error processing video:',
                       str(e), CLR, CURSOR_DOWN_FACTORY(2))
                 errorCounter += 1
                 # Move the file and metadata to failures directory
-                os.rename(file_path, os.path.join(
-                    failures_dir, os.path.basename(file_path)))
-                os.rename(metadata_path, os.path.join(
-                    failures_dir, os.path.basename(metadata_path)))
+                failure_file_path = os.path.join(
+                    failures_dir, os.path.basename(file_path))
+                if os.path.exists(failure_file_path):
+                    os.remove(failure_file_path)
+                os.rename(file_path, failure_file_path)
+                failure_metadata_path = os.path.join(
+                    failures_dir, os.path.basename(metadata_path))
+                if os.path.exists(failure_metadata_path):
+                    os.remove(failure_metadata_path)
+                os.rename(metadata_path, failure_metadata_path)
                 continue
 
         elif ext[1:].casefold() in ['tif', 'tiff', 'jpeg', 'jpg', 'heic', 'png']:
@@ -224,6 +239,7 @@ def processFolder(root_folder, edited_word, optimize, out_folder, max_dimension)
 
                 image_exif = image.getexif()
                 if OrientationTagID in image_exif:
+                    print("ORIENTATION FOUND")
                     orientation = image_exif[OrientationTagID]
 
                     if orientation == 3:
@@ -255,8 +271,11 @@ def processFolder(root_folder, edited_word, optimize, out_folder, max_dimension)
                     image.save(new_image_path, quality=optimize)
 
                 metadata = extract_image_metadata(file_path, metadata_path)
-                save_processed_image(new_image_path, new_image_path, metadata)
+                save_processed_image(file_path, new_image_path, metadata)
                 setFileCreationTime(new_image_path, timeStamp)
+
+                os.remove(file_path)
+                os.remove(metadata_path)
 
                 successCounter += 1
             except Exception as e:
@@ -264,13 +283,18 @@ def processFolder(root_folder, edited_word, optimize, out_folder, max_dimension)
                       str(e), CLR, CURSOR_DOWN_FACTORY(2))
                 errorCounter += 1
                 # Move the file and metadata to failures directory
-                os.rename(file_path, os.path.join(
-                    failures_dir, os.path.basename(file_path)))
-                os.rename(metadata_path, os.path.join(
-                    failures_dir, os.path.basename(metadata_path)))
+                failure_file_path = os.path.join(
+                    failures_dir, os.path.basename(file_path))
+                if os.path.exists(failure_file_path):
+                    os.remove(failure_file_path)
+                os.rename(file_path, failure_file_path)
+                failure_metadata_path = os.path.join(
+                    failures_dir, os.path.basename(metadata_path))
+                if os.path.exists(failure_metadata_path):
+                    os.remove(failure_metadata_path)
+                os.rename(metadata_path, failure_metadata_path)
                 continue
 
-    print()
-    print('Metadata merging has been finished')
-    print('Success', successCounter)
-    print('Failed', errorCounter)
+    print("\nProcessing complete!")
+    print(f"Successes: {successCounter}")
+    print(f"Errors: {errorCounter}")
